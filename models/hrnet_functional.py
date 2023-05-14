@@ -14,15 +14,6 @@ Every functions should:
 So that every functions should be used in this format:
     output = function(inputs, *args, **kwargs)
 """
-def nc(name, postfix):
-    """nc (name check)
-    If name is None, return None
-    Else, append name and postfix
-    """
-    if name is None:
-        return None
-    else:
-        return '_'.join([name,postfix])
 
 
 def conv3x3(inputs, filters, stride=1, name=None):
@@ -280,7 +271,9 @@ def HRNet(
     depth_list:list,
     blocks_per_branch:int,
     first_conv_filter:int,
+    output_activation=None,
     name=None,
+    **kwargs,
 ):
     """
     Parameters
@@ -296,6 +289,8 @@ def HRNet(
     first_conv_filter : int
         Number of filters(C) of the highest resolution branch. The channel
         doubles after each downsample.
+    output_activation : str, optional
+        Activation function of the output layer. (default None)
     """
     inputs = keras.Input(shape=(None,None,input_channels), name='input')
     x = [inputs]
@@ -317,7 +312,8 @@ def HRNet(
         output_channels,
         1,
         padding='same',
-        name=nc(name,'bottleneck')
+        name=nc(name,'bottleneck'),
+        activation=output_activation,
     )
     
     return keras.Model(inputs=inputs, outputs=output, name=name)

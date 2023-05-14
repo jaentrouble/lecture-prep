@@ -27,20 +27,29 @@ def JpegDataset(
         shuffle: bool
         drop_remainder: bool
         resize: tuple, (height, width)
-        normalize: bool
+        normalize: bool or str
+            True: normalize to [0,1]
+            'tanh': normalize to [-1,1]
     Returns:
         dataset: tf.data.Dataset
     """
     image_dir = Path(image_dir)
     image_paths = [str(path) for path in image_dir.glob('*.jpg')]
+    image_paths.sort()
+    n = len(image_paths)
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
     dataset = dataset.map(jpeg_img_loader, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    # to float32
+    dataset = dataset.map(lambda x: tf.cast(x, tf.float32))
+    if normalize:
+        if normalize == 'tanh':
+            dataset = dataset.map(lambda x: x / 127.5 - 1.)
+        else:
+            dataset = dataset.map(lambda x: x / 255.)
     if resize is not None:
         dataset = dataset.map(lambda x: tf.image.resize(x, resize))
-    if normalize:
-        dataset = dataset.map(lambda x: x / 255.)
     dataset = dataset.batch(batch_size, drop_remainder=drop_remainder)
     if shuffle:
         dataset = dataset.shuffle(batch_size)
     dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
-    return dataset
+    return dataset, n

@@ -1,0 +1,36 @@
+{
+    "dataset_name" : "JpegDataset",
+    "dataset_kwargs" :{
+        "image_dir" : "../datasets/img_align_celeba/",
+        "batch_size" : 128,
+        "shuffle" : true,
+        "drop_remainder" : true,
+        "resize" : [216,176],
+        "normalize" : "tanh"
+    },
+    "generator_name" : "DCGANGenerator",
+    "generator_kwargs" : {
+        "noise_size" : 100,
+        "output_size" : [216,176],
+        "output_channels" : 3
+    },
+    "discriminator_name" : "DCGANDiscriminator",
+    "discriminator_kwargs" : {
+        "input_size" : [216,176,3]
+    },
+    "gan_loss_name" : "BinaryCrossentropy",
+    "gan_loss_kwargs" : {
+        "from_logits" : true,
+        "label_smoothing" : 0.2
+    },
+    "noise_size" : [100],
+
+    "lr" : 1e-5,
+    
+    "distributed" : true,
+    "save_period" : 500,
+
+    "name" : "DCGAN_celeba_0",
+    "note" : "Use DCGAN original model",
+    "epochs" : 50
+}

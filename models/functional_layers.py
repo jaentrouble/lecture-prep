@@ -6,6 +6,17 @@ from tensorflow import nn
 BN_MOMENTUM = 0.9
 NORM = 'batch'
 
+def nc(name, postfix):
+    """nc (name check)
+    If name is None, return None
+    Else, append name and postfix
+    """
+    if name is None:
+        return None
+    else:
+        return '_'.join([name,postfix])
+
+
 """
 Simple wrapper around keras layers for convenience
 """

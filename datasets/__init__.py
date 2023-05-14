@@ -1,1 +1,1 @@
-from jpeg_datasets import JpegDataset
+from .jpeg_datasets import JpegDataset

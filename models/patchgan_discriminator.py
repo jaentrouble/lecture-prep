@@ -1,10 +1,35 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 """
 This code is from
 https://github.com/tensorflow/examples/blob/master/tensorflow_examples/models/pix2pix/pix2pix.py
 """
+
+class InstanceNormalization(tf.keras.layers.Layer):
+  """Instance Normalization Layer (https://arxiv.org/abs/1607.08022)."""
+
+  def __init__(self, epsilon=1e-5):
+    super(InstanceNormalization, self).__init__()
+    self.epsilon = epsilon
+
+  def build(self, input_shape):
+    self.scale = self.add_weight(
+        name='scale',
+        shape=input_shape[-1:],
+        initializer=tf.random_normal_initializer(1., 0.02),
+        trainable=True)
+
+    self.offset = self.add_weight(
+        name='offset',
+        shape=input_shape[-1:],
+        initializer='zeros',
+        trainable=True)
+
+  def call(self, x):
+    mean, variance = tf.nn.moments(x, axes=[1, 2], keepdims=True)
+    inv = tf.math.rsqrt(variance + self.epsilon)
+    normalized = (x - mean) * inv
+    return self.scale * normalized + self.offset
 
 def downsample(filters, size, norm_type='instancenorm', apply_norm=True):
     """Downsamples an input.
@@ -28,7 +53,7 @@ def downsample(filters, size, norm_type='instancenorm', apply_norm=True):
         if norm_type.lower() == 'batchnorm':
             result.add(tf.keras.layers.BatchNormalization())
         elif norm_type.lower() == 'instancenorm':
-            result.add(tfa.layers.InstanceNormalization())
+            result.add(InstanceNormalization())
 
     result.add(tf.keras.layers.LeakyReLU())
 
@@ -69,7 +94,7 @@ def PatchGANDiscriminator(
     if norm_type.lower() == 'batchnorm':
         norm1 = tf.keras.layers.BatchNormalization()(conv)
     elif norm_type.lower() == 'instancenorm':
-        norm1 = tfa.layers.InstanceNormalization()(conv)
+        norm1 = InstanceNormalization()(conv)
 
     leaky_relu = tf.keras.layers.LeakyReLU()(norm1)
 
