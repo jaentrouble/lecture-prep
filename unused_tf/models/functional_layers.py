@@ -56,3 +56,9 @@ def upsampling_layer(inputs, *args, **kwargs):
     Simple wrapper around upsampling2d layer for convenience
     """
     return layers.UpSampling2D(*args,**kwargs)(inputs)
+
+def conv2dt_layer(inputs, *args, **kwargs):
+    """
+    Simple wrapper around conv2dtranspose layer for convenience
+    """
+    return layers.Conv2DTranspose(*args,**kwargs)(inputs)

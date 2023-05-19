@@ -113,7 +113,7 @@ def high_resolution_branch(
     return x
 
 def high_resolution_fusion(
-    inputs, filters:list, name=None
+    inputs, filters:list, convt=False, name=None
 ):
     r"""A fusion layer at the end of a HR-Net Module
 
@@ -133,6 +133,8 @@ def high_resolution_fusion(
         Input tensor
     filters : list
         Number of filters(C) per outputs. len(filters) == output Tensor #
+    convt : bool, optional
+        If True, use Conv2DTranspose instead of Upsampling2D (default False)
     name : str, optional
         Name of this fusion layer. (default None)
 
@@ -151,20 +153,30 @@ def high_resolution_fusion(
     for i in range(num_outputs):
         for j in range(num_inputs):
             if j > i:
-                xp = upsampling_layer(
-                    inputs[j],
-                    size=2**(j-i),
-                    interpolation='bilinear',
-                    dtype=tf.float32,
-                    name=nc(name,f'upsample{i}_{j}'),
-                )
-                xp = conv2d_layer(
-                    xp,
-                    filters[i],
-                    1,
-                    padding='same',
-                    name=nc(name,f'conv{i}_{j}'),
-                )
+                if convt:
+                    xp = conv2dt_layer(
+                        inputs[j],
+                        filters = filters[i],
+                        kernel_size = 2**(j-i)+1,
+                        strides = 2**(j-i),
+                        padding='same',
+                        name=nc(name,f'conv{i}_{j}'),
+                    )
+                else:
+                    xp = upsampling_layer(
+                        inputs[j],
+                        size=2**(j-i),
+                        interpolation='bilinear',
+                        dtype=tf.float32,
+                        name=nc(name,f'upsample{i}_{j}'),
+                    )
+                    xp = conv2d_layer(
+                        xp,
+                        filters[i],
+                        1,
+                        padding='same',
+                        name=nc(name,f'conv{i}_{j}'),
+                    )
                 xp = norm_layer(
                     xp,
                     name=nc(name,f'norm{i}_{j}'),
@@ -209,7 +221,7 @@ def high_resolution_fusion(
     return outputs
 
 def high_resolution_module(
-    inputs, filters:list, blocks:list, name=None,
+    inputs, filters:list, blocks:list, convt=False, name=None,
 ):
     r"""A Fusion - Branch Module
 
@@ -233,6 +245,8 @@ def high_resolution_module(
         Number of filters(C) per branches. len(filters) == output Tensor #
     blocks : list
         Number of blocks per each branch.
+    convt : bool, optional
+        If True, use Conv2DTranspose instead of Upsampling2D (default False)
     name : str, optional
         Name of this branch. (default None)
 
@@ -250,6 +264,7 @@ def high_resolution_module(
     x = high_resolution_fusion(
         inputs,
         filters,
+        convt=convt,
         name=nc(name, 'fusion')
     )
     outputs = []
@@ -272,6 +287,7 @@ def HRNet(
     blocks_per_branch:int,
     first_conv_filter:int,
     output_activation=None,
+    convt=False,
     name=None,
     **kwargs,
 ):
@@ -291,6 +307,8 @@ def HRNet(
         doubles after each downsample.
     output_activation : str, optional
         Activation function of the output layer. (default None)
+    convt : bool, optional
+        If True, use Conv2DTranspose instead of Upsampling2D (default False)
     """
     inputs = keras.Input(shape=(None,None,input_channels), name='input')
     x = [inputs]
@@ -299,11 +317,13 @@ def HRNet(
             x,
             filters=[first_conv_filter*(2**i)]*depth,
             blocks=[blocks_per_branch]*depth,
+            convt=convt,
             name=nc(name,f'module{i}')
         )
     x = high_resolution_fusion(
         x,
         filters=[first_conv_filter],
+        convt=convt,
         name=nc(name,'output_fusion')
     )
     # bottleneck

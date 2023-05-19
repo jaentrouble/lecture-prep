@@ -29,6 +29,8 @@ class Trainer():
             save_period=500,
             lr_schedule_name=None,
             lr_schedule_kwargs=None,
+            lr_generator=None,
+            lr_discriminator=None,
             **kwargs
     ):
         """
@@ -55,7 +57,7 @@ class Trainer():
         name : str
             name of the trainer
         lr : float
-            learning rate (ignored if lr_schedule_name is not None)
+            learning rate (ignored if lr_schedule_name is not None or lr_generator is not None or lr_discriminator is not None)
         distributed : bool  
             whether to use distributed training
         checkpoint_restore_path : str
@@ -66,6 +68,10 @@ class Trainer():
             learning rate schedule name
         lr_schedule_kwargs : dict
             learning rate schedule kwargs
+        lr_generator : float
+            learning rate for generator (ignored if lr_schedule_name is not None)
+        lr_discriminator : float
+            learning rate for discriminator (ignored if lr_schedule_name is not None)
         """
         self.save_period = save_period
         self.noise_size = noise_size
@@ -123,14 +129,22 @@ class Trainer():
                 self.gan_loss_obj = gan_loss_obj
 
             # assert at least one of lr and lr_schedule_name is not None
-            assert lr is not None or lr_schedule_name is not None
+            assert lr is not None or lr_schedule_name is not None or \
+                (lr_generator is not None and lr_discriminator is not None)
 
             if lr_schedule_name is not None:
-                self.lr = getattr(tf.keras.optimizers.schedules, lr_schedule_name)(**lr_schedule_kwargs)
+                lr = getattr(tf.keras.optimizers.schedules, lr_schedule_name)(**lr_schedule_kwargs)
+                self.lr_generator = lr
+                self.lr_discriminator = lr
+            elif lr_generator is not None and lr_discriminator is not None:
+                self.lr_generator = lr_generator
+                self.lr_discriminator = lr_discriminator
             else:
-                self.lr = lr
-            self.generator_optimizer = tf.keras.optimizers.Adam(self.lr, beta_1=0.5)
-            self.discriminator_optimizer = tf.keras.optimizers.Adam(self.lr, beta_1=0.5)
+                self.lr_generator = lr
+                self.lr_discriminator = lr
+
+            self.generator_optimizer = tf.keras.optimizers.Adam(self.lr_generator, beta_1=0.5)
+            self.discriminator_optimizer = tf.keras.optimizers.Adam(self.lr_discriminator, beta_1=0.5)
 
             self.name = name
             self.log_dir = Path('logs') / self.name
