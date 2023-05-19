@@ -1,76 +1,52 @@
-import tensorflow as tf
-from tensorflow import keras
-from keras import layers
-from tensorflow import nn
-from .functional_layers import *
+import torch
+from torch import nn
 
-def DCGANGenerator(
-        noise_size : int,
-        output_size : tuple,
-        output_channels : int,
-        name=None
-):
-    """DCGAN Generator
-    Upscales 3 times from noise to output_size
-    
-    Parameters
-    ----------
-    noise_size : int
-        size of the noise vector
-    output_size : tuple
-        output size (H,W)
-        Assert that output_size[0] and output_size[1] are divisible by 8
-    output_channels : int
-        number of output channels
-    """
-    noise = keras.Input(shape=(noise_size,), name=nc(name,'noise'))
-    first_layer_size = (output_size[0]//8, output_size[1]//8)
-    assert first_layer_size[0]*8 == output_size[0], "output_size[0] must be divisible by 8"
-    assert first_layer_size[1]*8 == output_size[1], "output_size[1] must be divisible by 8"
-    x = layers.Dense(256*first_layer_size[0]*first_layer_size[1])(noise)
-    x = layers.Reshape((first_layer_size[0],first_layer_size[1],256))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU()(x)
-    
-    x = layers.Conv2DTranspose(128, 5, strides=2, padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU()(x)
+class DCGANGenerator(nn.Module):
+    def __init__(
+            self,
+            noise_size : int,
+            output_size : tuple,
+            output_channels : int,
+    ):
+        """DCGAN Generator
+        Upscales 3 times from noise to output_size
 
-    x = layers.Conv2DTranspose(64, 5, strides=2, padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU()(x)
+        Parameters
+        ----------
+        noise_size : int
+            size of the noise vector
+        output_size : tuple
+            output size (H,W)
+            Assert that output_size[0] and output_size[1] are divisible by 8
+        output_channels : int
+            number of output channels
+        """
+        super().__init__()
+        self.noise_size = noise_size
+        self.output_size = output_size
+        self.output_channels = output_channels
+        self.first_layer_size = (output_size[0]//8, output_size[1]//8)
+        assert self.first_layer_size[0]*8 == output_size[0], "output_size[0] must be divisible by 8"
+        assert self.first_layer_size[1]*8 == output_size[1], "output_size[1] must be divisible by 8"
+        self.fc = nn.Linear(noise_size, 256*self.first_layer_size[0]*self.first_layer_size[1])
+        self.layers = nn.Sequential(
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.ConvTranspose2d(256, 128, 5, stride=2, padding=2, output_padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 64, 5, stride=2, padding=2, output_padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, 32, 5, stride=2, padding=2, output_padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(32, output_channels, 5, stride=1, padding=2),
+            nn.Tanh(),
+        )
 
-    x = layers.Conv2DTranspose(32, 5, strides=2, padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU()(x)
-
-    x = layers.Conv2D(output_channels, 5, strides=1, padding='same')(x)
-    x = layers.Activation('tanh')(x) 
-
-    return keras.Model(noise, x, name=nc(name,'generator'))
-
-def DCGANDiscriminator(
-        input_size : tuple,
-        name=None
-):
-    """DCGAN Discriminator
-    """
-    inputs = keras.Input(shape=input_size, name=nc(name,'input'))
-    x = layers.Conv2D(32, 5, strides=2, padding='same')(inputs)
-    x = layers.LeakyReLU()(x)
-
-    x = layers.Conv2D(64, 5, strides=2, padding='same')(x)
-    x = layers.LeakyReLU()(x)
-
-    x = layers.Conv2D(128, 5, strides=2, padding='same')(x)
-    x = layers.LeakyReLU()(x)
-
-    x = layers.Conv2D(256, 5, strides=2, padding='same')(x)
-    x = layers.LeakyReLU()(x)
-
-    x = layers.Flatten()(x)
-    x = layers.Dense(1)(x)
-
-    return keras.Model(inputs, x, name=nc(name,'discriminator'))
-
-    
+    def forward(self, x):
+        x = self.fc(x)
+        x = x.reshape(-1, 256, self.first_layer_size[0], self.first_layer_size[1])
+        x = self.layers(x)
+        return x
