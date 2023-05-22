@@ -1,0 +1,47 @@
+{
+    "dataset_name": "JpegDataset",
+    "dataset_kwargs": {
+        "image_dir": "../datasets/img_align_celeba/",
+        "batch_size": 512,
+        "shuffle": true,
+        "drop_remainder": true,
+        "resize": [
+            104,
+            88
+        ],
+        "normalize": "tanh"
+    },
+    "generator_name": "DCGANGenerator",
+    "generator_kwargs": {
+        "noise_size": 100,
+        "output_size": [
+            104,
+            88
+        ],
+        "output_channels": 3,
+        "name": "generator"
+    },
+    "discriminator_name": "DCGANDiscriminator",
+    "discriminator_kwargs": {
+        "input_size": [
+            104,
+            88,
+            3
+        ],
+        "name": "discriminator"
+    },
+    "gan_loss_name": "MeanSquaredError",
+    "gan_loss_kwargs": {
+        "reduction": "none"
+    },
+    "noise_size": [
+        100
+    ],
+    "lr_generator": 1e-05,
+    "lr_discriminator": 2e-5,
+    "distributed": true,
+    "save_period": 2000,
+    "name": "DCGAN_small_celeba_4",
+    "note": "DCGAN small size, MSE + lower lr (wrong discriminator lr in celeba_3)",
+    "epochs": 1000
+}

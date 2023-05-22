@@ -1,7 +1,7 @@
 import torch
 from pathlib import Path
 from torchvision.io import read_image
-from torchvision.transforms.functional import resize
+from torchvision.transforms.functional import resize as tv_resize
 from torch.utils.data import Dataset
 import tqdm
 
@@ -29,6 +29,7 @@ class JpegDataset(Dataset):
                 self.image_paths,
                 desc='Loading images',
                 leave=False,
+                ncols=80,
             ):
             image = read_image(path)
             if normalize:
@@ -37,7 +38,7 @@ class JpegDataset(Dataset):
                 else:
                     image = image / 255.
             if resize is not None:
-                image = resize(image, resize)
+                image = tv_resize(image, resize, antialias=True)
             self.images.append(image)
 
         self.n = len(self.images)

@@ -1,4 +1,3 @@
-import torch
 from torch import nn
 
 
@@ -38,7 +37,7 @@ class ResBlock(nn.Module):
 class DCGANGenerator(nn.Module):
     def __init__(
             self,
-            noise_size : int,
+            noise_size : tuple,
             output_size : tuple,
             output_channels : int,
     ):
@@ -47,8 +46,9 @@ class DCGANGenerator(nn.Module):
 
         Parameters
         ----------
-        noise_size : int
+        noise_size : tuple
             size of the noise vector
+            To match the convention, noise_size is a tuple, but it should have only one int
         output_size : tuple
             output size (H,W)
             Assert that output_size[0] and output_size[1] are divisible by 8
@@ -56,13 +56,14 @@ class DCGANGenerator(nn.Module):
             number of output channels
         """
         super().__init__()
-        self.noise_size = noise_size
+        assert len(noise_size) == 1, "noise_size should be a tuple with only one int"
+        self.noise_size = noise_size[0]
         self.output_size = output_size
         self.output_channels = output_channels
         self.first_layer_size = (output_size[0]//8, output_size[1]//8)
         assert self.first_layer_size[0]*8 == output_size[0], "output_size[0] must be divisible by 8"
         assert self.first_layer_size[1]*8 == output_size[1], "output_size[1] must be divisible by 8"
-        self.fc = nn.Linear(noise_size, 256*self.first_layer_size[0]*self.first_layer_size[1])
+        self.fc = nn.Linear(self.noise_size, 256*self.first_layer_size[0]*self.first_layer_size[1])
         self.layers = nn.Sequential(
             nn.BatchNorm2d(256),
             nn.ReLU(),
@@ -88,7 +89,7 @@ class DCGANGenerator(nn.Module):
 class DCGANGeneratorEX(nn.Module):
     def __init__(
         self,
-        noise_size : int,
+        noise_size : tuple,
         output_size : tuple,
         output_channels : int,
         res_blocks: int,
@@ -98,8 +99,9 @@ class DCGANGeneratorEX(nn.Module):
         
         Parameters
         ----------
-        noise_size : int
+        noise_size : tuple
             size of the noise vector
+            To match the convention, noise_size is a tuple, but it should have only one int
         output_size : tuple
             output size (H,W)
             Assert that output_size[0] and output_size[1] are divisible by 8
@@ -109,13 +111,14 @@ class DCGANGeneratorEX(nn.Module):
             number of residual blocks
         """
         super().__init__()
-        self.noise_size = noise_size
+        assert len(noise_size) == 1, "noise_size should be a tuple with only one int"
+        self.noise_size = noise_size[0]
         self.output_size = output_size
         self.output_channels = output_channels
         self.first_layer_size = (output_size[0]//8, output_size[1]//8)
         assert self.first_layer_size[0]*8 == output_size[0], "output_size[0] must be divisible by 8"
         assert self.first_layer_size[1]*8 == output_size[1], "output_size[1] must be divisible by 8"
-        self.fc = nn.Linear(noise_size, 256*self.first_layer_size[0]*self.first_layer_size[1])
+        self.fc = nn.Linear(self.noise_size, 256*self.first_layer_size[0]*self.first_layer_size[1])
         self.layers = nn.Sequential(
             nn.BatchNorm2d(256),
             nn.ReLU(),
@@ -161,10 +164,11 @@ class DCGANDiscriminator(nn.Module):
         super().__init__()
         self.input_channels = input_channels
         
-        fc_flatten_size = input_size[0] * input_size[1]
+        h, w = input_size
         for _ in range(4):
-            fc_flatten_size = fc_flatten_size // 2 + fc_flatten_size % 2
-        fc_flatten_size *= 256
+            h = h // 2 + h % 2
+            w = w // 2 + w % 2
+        fc_flatten_size = h * w * 256
 
         if normalize_layer is None:
             norm_layer = nn.Identity
