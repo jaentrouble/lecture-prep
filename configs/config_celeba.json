@@ -23,8 +23,7 @@
             104,
             88
         ],
-        "input_channels": 3,
-        "normalize_layer": "batchnorm"
+        "input_channels": 3
     },
     "gan_loss_name": "BCEWithLogitsLoss",
     "gan_loss_kwargs": {},
@@ -32,8 +31,8 @@
     "lr_discriminator": 2e-5,
     "distributed": true,
 
-    "name": "DCGAN_pt_0",
-    "note": "Rerun best DCGAN with PyTorch",
+    "name": "DCGAN_pt_1",
+    "note": "Remove batchnorm from discriminator.",
     "epochs": 500,
     "batch_size": 512
 }

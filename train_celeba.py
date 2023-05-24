@@ -200,7 +200,7 @@ class Trainer():
         for epoch in tqdm.trange(
             self.epochs,
             desc='Training',
-            leave=False,
+            leave=True,
             ncols=80,
             unit='epoch',
         ):
