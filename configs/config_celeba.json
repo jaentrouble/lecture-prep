@@ -3,8 +3,8 @@
     "dataset_kwargs": {
         "image_dir": "../datasets/img_align_celeba/img_align_celeba/",
         "resize": [
-            104,
-            88
+            216,
+            176
         ],
         "normalize": "tanh"
     },
@@ -12,16 +12,16 @@
     "generator_kwargs": {
         "noise_size": [100],
         "output_size": [
-            104,
-            88
+            216,
+            176
         ],
         "output_channels": 3
     },
     "discriminator_name": "DCGANDiscriminator",
     "discriminator_kwargs": {
         "input_size": [
-            104,
-            88
+            216,
+            176
         ],
         "input_channels": 3
     },
@@ -31,8 +31,8 @@
     "lr_discriminator": 2e-5,
     "distributed": true,
 
-    "name": "DCGAN_pt_1",
-    "note": "Remove batchnorm from discriminator.",
+    "name": "DCGAN_pt_2",
+    "note": "Retest with larger image size.",
     "epochs": 500,
     "batch_size": 512
 }
